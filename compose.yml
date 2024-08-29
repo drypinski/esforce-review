@@ -163,7 +163,7 @@ services:
       NODE_ENV: development
       API_BASE_URL: http://api.esforce.localhost
       SITE_HOST: 0.0.0.0
-    command: sh -c "until [ -f .ready ] ; do sleep 1 ; done && yarn dev --host 0.0.0.0"
+    command: sh -c "until [ -f .ready ] ; do sleep 1 ; done && yarn dev --host 0.0.0.0 --open"
     tty: true
 
 networks:
