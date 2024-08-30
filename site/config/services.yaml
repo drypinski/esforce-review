@@ -4,6 +4,7 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    google_recaptcha_site_key: '%env(GOOGLE_RECAPTCHA_SITE_KEY)%'
 
 services:
     # default configuration for services in *this* file
@@ -22,7 +23,14 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
-    App\Manger\PostManager:
+    App\Query\FetchPosts\Fetcher:
         arguments:
-            $postsCacheTime: '%env(POSTS_CACHE_TIME)%'
-            $postCacheTime: '%env(POST_CACHE_TIME)%'
+            $cacheTime: '%env(POSTS_CACHE_TIME)%'
+
+    App\Query\FetchPostById\Fetcher:
+        arguments:
+            $cacheTime: '%env(POST_CACHE_TIME)%'
+
+    App\Query\FetchAuthors\Fetcher:
+        arguments:
+            $cacheTime: '%env(AUTHORS_CACHE_TIME)%'

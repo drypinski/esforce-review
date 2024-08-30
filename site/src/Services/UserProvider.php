@@ -3,18 +3,18 @@
 namespace App\Services;
 
 use App\Entity\User;
-use Symfony\Component\HttpFoundation\RequestStack;
+use App\Repository\UserRepository;
 
 final class UserProvider
 {
     public const string COOKIE_KEY = 'identifier';
 
-    private RequestStack $requestStack;
     private User|null $user = null;
+    private UserRepository $userRepository;
 
-    public function __construct(RequestStack $requestStack)
+    public function __construct(UserRepository $userRepository)
     {
-        $this->requestStack = $requestStack;
+        $this->userRepository = $userRepository;
     }
 
     public function getUser(): ?User
@@ -25,9 +25,10 @@ final class UserProvider
     public function login(User $user): void
     {
         $this->user = $user;
+    }
 
-        if (null !== $request = $this->requestStack->getMainRequest()) {
-            $request->cookies->set(self::COOKIE_KEY, (string) $user->getId());
-        }
+    public function find(string $id): ?User
+    {
+        return $this->userRepository->find($id);
     }
 }
