@@ -1,4 +1,5 @@
-init: docker-pull docker-build docker-up site-init
+force-init: docker-down-clear init
+init: docker-pull docker-build docker-up site-init front-init
 
 up: docker-up
 down: docker-down
@@ -28,23 +29,19 @@ node: front-run-node
 # =================
 # === SITE ========
 # =================
-site-init: site-clean site-composer-install site-cache-clear
+site-init: site-clean site-update-permissions site-composer-install site-cache-clear
 
 site-clean:
-	docker compose run --rm site-php-cli sh -c 'rm -rf vendor'
-	docker compose run --rm site-node sh -c 'rm -rf node_modules'
+	docker compose run --rm site-php-cli sh -c 'rm -rf vendor var/*'
+
+site-update-permissions:
+	docker compose run --rm site-php-cli sh -c 'chmod a+w -R var'
 
 site-composer-install:
 	COMPOSER_MEMORY_LIMIT=-1 docker compose run --rm site-php-cli sh -c 'composer install --no-interaction --no-scripts'
 
 site-cache-clear:
 	docker compose run --rm site-php-cli sh -c 'bin/console cache:clear && bin/console cache:warmup'
-
-site-yarn-install:
-	docker compose run --rm site-node sh -c 'yarn install'
-
-site-yarn-build:
-	docker compose run --rm site-node sh -c 'yarn run build'
 
 site-run-php:
 	docker compose run --rm site-php-cli bash
@@ -54,11 +51,11 @@ site-run-php:
 # =================
 front-init: front-clean front-install front-ready
 
+front-clean:
+	docker compose run --rm front-node sh -c 'rm -rf .ready .nuxt .output node_modules'
+
 front-install:
 	docker compose run --rm front-node sh -c 'yarn install'
-
-front-clean:
-	docker compose run --rm front-node sh -c 'rm -rf .ready .nuxt node_modules'
 
 front-ready:
 	docker compose run --rm front-node sh -c 'touch .ready'
