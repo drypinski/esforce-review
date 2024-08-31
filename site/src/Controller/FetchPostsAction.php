@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Exception\UserNotFoundException;
 use App\Exception\ValidationException;
+use App\Helper\HttpCacheHelper;
 use App\Query\FetchPosts\Fetcher;
 use App\Query\FetchPosts\Query;
 use App\Query\FetchReadPosts\Fetcher as ReadPostsFetcher;
@@ -11,6 +12,7 @@ use App\Query\FetchReadPosts\Query as ReadPostsQuery;
 use App\Services\UserProvider;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Constraints\Uuid;
@@ -26,7 +28,7 @@ final readonly class FetchPostsAction
         private UserProvider $userProvider
     ) {}
 
-    public function __invoke(Request $request, Fetcher $fetcher): JsonResponse
+    public function __invoke(Request $request, Fetcher $fetcher): Response
     {
         if ('' !== $userId = $request->query->getString('user')) {
             return $this->fetchReadPosts($userId);
@@ -35,13 +37,17 @@ final readonly class FetchPostsAction
         $query = new Query();
         $query->authorId = $request->query->get('author');
 
-        return new JsonResponse($fetcher->fetch($query));
+        if (null !== $user = $this->userProvider->getUser()) {
+            $query->userId = (string) $user->getId();
+        }
+
+        return HttpCacheHelper::withCache(new JsonResponse($fetcher->fetch($query)), HttpCacheHelper::TIME_2MIN);
     }
 
     /**
      * @throws UserNotFoundException
      */
-    private function fetchReadPosts(string $userId): JsonResponse
+    private function fetchReadPosts(string $userId): Response
     {
         $errors = $this->validator->validate($userId, [new Uuid()]);
 

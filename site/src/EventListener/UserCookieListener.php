@@ -10,13 +10,17 @@ use Symfony\Component\HttpKernel\KernelEvents;
 
 final readonly class UserCookieListener
 {
-    public function __construct(private UserProvider $userProvider)
+    public function __construct(private UserProvider $userProvider, private int $cacheTime = 7776000 /* 90 days */)
     {}
 
     #[AsEventListener(event: KernelEvents::RESPONSE)]
     public function onKernelResponse(ResponseEvent $event): void
     {
         if (!$event->isMainRequest()) {
+            return;
+        }
+
+        if (null !== $event->getResponse()->getMaxAge()) {
             return;
         }
 
@@ -27,7 +31,7 @@ final readonly class UserCookieListener
         $event->getResponse()->headers->setCookie(new Cookie(
             $this->userProvider::COOKIE_KEY,
             (string) $user->getId(),
-            time() + 60*60*24*30
+            time() + $this->cacheTime
         ));
     }
 }

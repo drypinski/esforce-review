@@ -26,4 +26,18 @@ class PostViewRepository extends ServiceEntityRepository
     {
         $this->getEntityManager()->flush();
     }
+
+    /**
+     * @return array<int>
+     */
+    public function findReadPostsIds(string $userId): array
+    {
+        $views = $this->findBy(['user' => $userId]);
+
+        if (empty($views)) {
+            return [];
+        }
+
+        return array_map(static fn(PostView $view) => (int) $view->getPostKey(), $views);
+    }
 }

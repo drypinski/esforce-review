@@ -2,6 +2,7 @@
 
 namespace App\Query\FetchPosts;
 
+use App\Repository\PostViewRepository;
 use App\Services\ApiClient\ApiClientInterface;
 use App\Services\ObjectValidator;
 use Symfony\Contracts\Cache\CacheInterface;
@@ -13,6 +14,7 @@ final readonly class Fetcher
         private ObjectValidator $validator,
         private ApiClientInterface $api,
         private CacheInterface $cache,
+        private PostViewRepository $postViewRepository,
         private int $cacheTime
     ) {}
 
@@ -21,7 +23,7 @@ final readonly class Fetcher
         $this->validator->validate($query);
 
         if (!$query->useCache) {
-            return $this->fetchPosts($query);
+            return $this->updateReadField($query, $this->fetchPosts($query));
         }
 
         $key = 'posts';
@@ -30,15 +32,42 @@ final readonly class Fetcher
             $key = sprintf('%s.author_%s', $key, $query->authorId);
         }
 
-        return $this->cache->get($key, function (ItemInterface $item) use ($query): array {
+        $posts = $this->cache->get($key, function (ItemInterface $item) use ($query): array {
             $item->expiresAfter($this->cacheTime);
 
             return $this->fetchPosts($query);
         });
+
+        return $this->updateReadField($query, $posts);
     }
 
     private function fetchPosts(Query $query): array
     {
-        return $this->api->getPosts([$this->api::FILTER_AUTHOR => $query->authorId]);
+        $posts = $this->api->getPosts([$this->api::FILTER_AUTHOR => $query->authorId]);
+
+        foreach ($posts as &$post) {
+            $post['read'] = false;
+        }
+
+        return $posts;
+    }
+
+    private function updateReadField(Query $query, array $posts): array
+    {
+        if (null === $query->userId) {
+            return $posts;
+        }
+
+        $ids = $this->postViewRepository->findReadPostsIds($query->userId);
+
+        if (empty($ids)) {
+            return $posts;
+        }
+
+        foreach ($posts as &$post) {
+            $post['read'] = in_array($post['id'] ?? null, $ids, true);
+        }
+
+        return $posts;
     }
 }

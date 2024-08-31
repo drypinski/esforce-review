@@ -10,4 +10,7 @@ final class Query
 
     #[Assert\Type(type: 'numeric')]
     public string|null $authorId = null;
+
+    #[Assert\Uuid]
+    public string|null $userId = null;
 }

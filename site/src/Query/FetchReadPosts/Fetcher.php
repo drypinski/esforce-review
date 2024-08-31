@@ -2,7 +2,6 @@
 
 namespace App\Query\FetchReadPosts;
 
-use App\Entity\PostView;
 use App\Query\FetchPosts\Fetcher as PostsFetcher;
 use App\Query\FetchPosts\Query as PostsQuery;
 use App\Repository\PostViewRepository;
@@ -20,19 +19,20 @@ final readonly class Fetcher
     {
         $this->validator->validate($query);
 
-        $views = $this->postViewRepository->findBy(['user' => $query->userId]);
+        $ids = $this->postViewRepository->findReadPostsIds($query->userId);
 
-        if (empty($views)) {
+        if (empty($ids)) {
             return [];
         }
 
-        $ids = array_map(static fn(PostView $view) => (int) $view->getPostKey(), $views);
-
-        return array_values(array_filter($this->getPosts(), fn(array $post) => in_array($post['id'], $ids, true)));
+        return array_values(array_filter($this->getPosts($query), fn(array $post) => in_array($post['id'], $ids, true)));
     }
 
-    private function getPosts(): array
+    private function getPosts(Query $query): array
     {
-        return $this->postsFetcher->fetch(new PostsQuery());
+        $postQuery = new PostsQuery();
+        $postQuery->userId = $query->userId;
+
+        return $this->postsFetcher->fetch($postQuery);
     }
 }
