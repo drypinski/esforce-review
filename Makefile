@@ -1,5 +1,5 @@
 force-init: docker-down-clear init
-init: docker-pull docker-build docker-up site-init front-init
+init: docker-pull docker-build docker-up site-init front-init restart
 
 up: docker-up
 down: docker-down
@@ -29,16 +29,19 @@ node: front-run-node
 # =================
 # === SITE ========
 # =================
-site-init: site-clean site-update-permissions site-composer-install site-cache-clear
+site-init: site-clean site-update-permissions site-composer-install site-migrations-migrate site-cache-clear
 
 site-clean:
 	docker compose run --rm site-php-cli sh -c 'rm -rf vendor var/*'
 
 site-update-permissions:
-	docker compose run --rm site-php-cli sh -c 'chmod a+w -R var'
+	docker compose run --rm site-php-cli sh -c 'mkdir -p var && chmod a+w -R var'
 
 site-composer-install:
 	COMPOSER_MEMORY_LIMIT=-1 docker compose run --rm site-php-cli sh -c 'composer install --no-interaction --no-scripts'
+
+site-migrations-migrate:
+	docker compose run --rm site-php-cli sh -c 'bin/console do:mi:mi --no-interaction'
 
 site-cache-clear:
 	docker compose run --rm site-php-cli sh -c 'bin/console cache:clear && bin/console cache:warmup'
