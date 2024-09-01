@@ -1,5 +1,5 @@
 force-init: docker-down-clear init
-init: docker-pull docker-build docker-up site-init front-init restart
+init: docker-down docker-pull docker-build site-init front-init docker-up
 
 up: docker-up
 down: docker-down
