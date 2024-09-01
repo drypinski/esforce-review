@@ -109,11 +109,14 @@ services:
     build:
       context: docker/dev/front/node
       dockerfile: 20.dockerfile
-    user: node
-    working_dir: /app
+      args:
+        UUID: ${UUID:-1000}
+        UGID: ${UGID:-1000}
     volumes:
       - ./front:/app
     environment:
+      UUID: ${UUID:-1000}
+      UGID: ${UGID:-1000}
       WDS_SOCKET_PORT: 0
       NODE_ENV: development
       API_BASE_URL: http://api.esforce.localhost
