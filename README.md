@@ -22,6 +22,7 @@ UGID=your-system-user-group-id
 3. Visit http://esforce.localhost
 
 ---
-Traefik: http://traefik.esforce.localhost/dashboard/
-API: http://api.esforce.localhost
-Application: http://esforce.localhost
+
+1. Traefik: http://traefik.esforce.localhost/dashboard/
+2. API: http://api.esforce.localhost
+3. Application: http://esforce.localhost

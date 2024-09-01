@@ -1,5 +1,8 @@
-force-init: docker-down-clear init
-init: docker-down docker-pull docker-build site-init front-init docker-up
+init: init-ci front-ready
+init-ci: docker-down-clear \
+	site-clear front-clear \
+	docker-pull docker-build docker-up \
+	site-init front-init
 
 up: docker-up
 down: docker-down
@@ -29,16 +32,19 @@ node: front-run-node
 # =================
 # === SITE ========
 # =================
-site-init: site-clean site-update-permissions site-composer-install site-migrations-migrate site-cache-clear
+site-init: site-update-permissions site-composer-install site-wait-db site-migrations-migrate site-cache-clear
 
-site-clean:
-	docker compose run --rm site-php-cli sh -c 'rm -rf vendor var/*'
+site-clear:
+	docker run --rm -v ${PWD}/site:/app -w /app alpine sh -c 'rm -rf vendor/* var/*'
 
 site-update-permissions:
-	docker compose run --rm site-php-cli sh -c 'mkdir -p var && chmod a+w -R var'
+	docker run --rm -v ${PWD}/site:/app -w /app alpine sh -c 'mkdir -p var && chmod a+w -R var'
 
 site-composer-install:
 	COMPOSER_MEMORY_LIMIT=-1 docker compose run --rm site-php-cli sh -c 'composer install --no-interaction --no-scripts'
+
+site-wait-db:
+	docker compose run --rm site-php-cli wait-for-it site_db:3306 -t 30
 
 site-migrations-migrate:
 	docker compose run --rm site-php-cli sh -c 'bin/console do:mi:mi --no-interaction'
@@ -52,16 +58,16 @@ site-run-php:
 # =================
 # === FRONT =======
 # =================
-front-init: front-clean front-install front-ready
+front-init: front-install
 
-front-clean:
+front-clear:
 	docker compose run --rm front-node sh -c 'rm -rf .ready .nuxt .output node_modules'
 
 front-install:
 	docker compose run --rm front-node sh -c 'yarn install'
 
 front-ready:
-	docker compose run --rm front-node sh -c 'touch .ready'
+	docker run --rm -v ${PWD}/front:/app -w /app alpine touch .ready
 
 front-run-node:
 	docker compose run --rm front-node bash
